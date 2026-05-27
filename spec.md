@@ -1,8 +1,8 @@
-# Spec: HSV Spielberechtigung Checker
+# Spec: HMM Spielberechtigung Checker
 
 ## Problem Statement
 
-Chess players in the Hamburger Schachverband (HSV) need to know whether they are eligible to play for a specific team in a given round of the Hamburger Mannschaftsmeisterschaft (HMM). The eligibility rules in §13–§16 of the HSV Turnierordnung are complex and error-prone to apply manually. This app provides a form where a user enters a player's ranking list number and selects a club and target league, and the app determines eligibility based on the current season's ranking list data scraped from the HSV website.
+Chess players in the Hamburger Schachverband need to know whether they are eligible to play for a specific team in a given round of the Hamburger Mannschaftsmeisterschaft (HMM). The eligibility rules in §13–§16 of the Hamburger Schachverband Turnierordnung are complex and error-prone to apply manually. This app provides a form where a user enters a player's ranking list number and selects a club and target league, and the app determines eligibility based on the current season's ranking list data scraped from the Hamburger Schachverband website.
 
 ---
 
@@ -13,7 +13,7 @@ Chess players in the Hamburger Schachverband (HSV) need to know whether they are
 #### Form Fields
 
 1. **Ranglistennummer** — numeric input. The player's position number on their club's ranking list (e.g. `3` for the 3rd player of a team).
-2. **Mannschaft** — dropdown of all 39 HSV member clubs, default value: `FC St. Pauli von 1910 e.V., Schachabteilung`. Sorted alphabetically.
+2. **Mannschaft** — dropdown of all 39 Hamburger Schachverband member clubs, default value: `FC St. Pauli von 1910 e.V., Schachabteilung`. Sorted alphabetically.
 3. **Liga** — dropdown of the target league the player wants to play in. Values (per §11):
    - Landesliga
    - Stadtliga
@@ -24,7 +24,7 @@ Chess players in the Hamburger Schachverband (HSV) need to know whether they are
 
 #### Data Source
 
-- Player ranking list data is scraped from the HSV HMM 2026 ranking list page:  
+- Player ranking list data is scraped from the HMM 2026 ranking list page:  
   `https://www.hamburger-schachverband.de/hmm2026/hmm2026_ranglisten.htm`
 - Scraped data is fetched at app startup (or on demand via a "Daten aktualisieren" button) and cached in memory.
 - The scraper runs server-side (Next.js API route or similar) to avoid CORS issues.
@@ -79,7 +79,7 @@ The explanation is shown in German.
 ## Acceptance Criteria
 
 1. The form renders with all three fields; Mannschaft defaults to `FC St. Pauli von 1910 e.V., Schachabteilung`.
-2. The Mannschaft dropdown lists all 39 HSV member clubs, sorted alphabetically.
+2. The Mannschaft dropdown lists all 39 Hamburger Schachverband member clubs, sorted alphabetically.
 3. The Liga dropdown lists all 6 league levels from §11.
 4. Submitting the form with a valid Ranglistennummer, Mannschaft, and Liga returns a verdict within 3 seconds.
 5. The verdict correctly applies all rules from §13–§16 based on the scraped ranking list data.
@@ -94,19 +94,19 @@ The explanation is shown in German.
 ## Implementation Approach
 
 1. **Project setup** — Initialize a React + TypeScript app (Vite or Next.js). If Next.js: use API routes for the scraper to avoid CORS.
-2. **HSV scraper** — Write a server-side scraper that fetches and parses `hmm2026_ranglisten.htm`. Extract per-club ranking lists: player name, Ranglistennummer, team number, league, substitute usage count. Cache result in memory with a timestamp.
+2. **HMM scraper** — Write a server-side scraper that fetches and parses `hmm2026_ranglisten.htm`. Extract per-club ranking lists: player name, Ranglistennummer, team number, league, substitute usage count. Cache result in memory with a timestamp.
 3. **Data model** — Define TypeScript types: `Club`, `Player`, `RankingEntry`, `EligibilityResult`.
-4. **Club list** — Hard-code the 39 HSV clubs (from `vereine.htm`) as a static array for the dropdown.
+4. **Club list** — Hard-code the 39 Hamburger Schachverband clubs (from `vereine.htm`) as a static array for the dropdown.
 5. **Eligibility engine** — Implement a pure function `checkEligibility(player, targetLeague, allData): EligibilityResult` that applies §13–§16 rules in sequence.
 6. **Form component** — Build the form with the three fields (Ranglistennummer, Mannschaft, Liga), validation, and submit handler.
 7. **Result component** — Display the verdict (✅/❌/⚠️) with the German explanation text.
-8. **Styling** — Clean, minimal UI. Use HSV colors (green/white) as accent.
+8. **Styling** — Clean, minimal UI. Use Hamburger Schachverband colors (green/white) as accent.
 9. **Testing** — Unit tests for the eligibility engine covering key rule scenarios from each paragraph.
 10. **Integration** — Wire form → scraper API → eligibility engine → result display.
 
 ---
 
-## HSV Club List (39 clubs)
+## Hamburger Schachverband Club List (39 clubs)
 
 | Kürzel | Name |
 |--------|------|
