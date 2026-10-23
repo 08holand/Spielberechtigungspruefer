@@ -23,6 +23,7 @@ export interface RankingData {
 }
 export interface DataStatus {
   available: boolean;
+  sourceMode: 'live' | 'bundled';
   fetchedAt: string | null;
   sourceDate: string | null;
   playerCount: number;
