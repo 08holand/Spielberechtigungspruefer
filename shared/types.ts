@@ -51,12 +51,22 @@ export interface CheckInput {
   context?: AppearanceContext;
 }
 export interface RuleCheck { paragraph: string; title: string; detail: string; status: 'pass' | 'fail' | 'unknown' }
+export interface TeamAppearance {
+  teamNumber: number;
+  teamName: string;
+  count: number | null;
+  rounds: number[];
+  sourceUrl: string | null;
+  sourceDate: string | null;
+  error: string | null;
+}
 export interface EligibilityResult {
   verdict: 'eligible' | 'ineligible' | 'conditional';
   title: string;
   explanation: string;
   player: Player;
   targetTeam: Team | null;
+  teamAppearances: TeamAppearance | null;
   remainingSubstitutions: number | null;
   checks: RuleCheck[];
   warnings: string[];

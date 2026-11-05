@@ -6,6 +6,7 @@ import { CLUBS } from '../shared/clubs';
 import { LEAGUES, type DataStatus, type RankingData } from '../shared/types';
 import { evaluateEligibility } from './eligibility';
 import { fetchRankingData, SOURCE_URL } from './scraper';
+import { fetchTeamAppearances } from './team-appearances';
 
 const app = express();
 const port = Number(process.env.PORT) || 5000;
@@ -33,8 +34,8 @@ function status(): DataStatus {
     warnings: [
       sourceMode === 'bundled'
         ? 'Offline-Kopie der HMM-Rangliste, Quellenstand 19. Juni 2026. Die Live-Aktualisierung ist derzeit nicht erreichbar.'
-        : 'Die Rangliste ist auf dem Stand vom 19. Juni 2026 und enthält keine Spielberichte oder Einsatzhistorien.',
-      'Die Rangliste enthält keine Spielberichte oder Einsatzhistorien.',
+        : 'Die Rangliste ist auf dem Stand vom 19. Juni 2026; Einzelergebnisse werden für ausgewählte Mannschaften separat geladen.',
+      'Einsatzhistorien werden bei einer ausgewählten Mannschaft aus den offiziellen Einzelergebnissen gelesen.',
       'Landesliga- und überregionale Mannschaftsaufstellungen sind in der Quelle nicht enthalten.',
     ],
     error: refreshError,
@@ -101,7 +102,7 @@ const requestSchema = z.object({
   }).optional(),
 });
 
-app.post('/api/check', (req, res) => {
+app.post('/api/check', async (req, res) => {
   const parsed = requestSchema.safeParse(req.body);
   if (!parsed.success || !CLUBS.some(({ code }) => code === parsed.data?.clubCode)) {
     res.status(400).json({ error: 'Bitte prüfe Ranglistennummer, Verein und Liga.' });
@@ -118,7 +119,10 @@ app.post('/api/check', (req, res) => {
     res.status(404).json({ error: `Ranglistennummer ${parsed.data.ranking} wurde beim gewählten Verein nicht gefunden.` });
     return;
   }
-  res.json(result);
+  const teamAppearances = result.targetTeam
+    ? await fetchTeamAppearances(result.targetTeam, result.player.ranking)
+    : null;
+  res.json({ ...result, teamAppearances });
 });
 
 if (!production) {

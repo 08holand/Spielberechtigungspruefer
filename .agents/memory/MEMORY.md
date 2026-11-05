@@ -1,0 +1,1 @@
+- [HMM appearance data](hmm-appearance-data.md) — use team individual results when Karteikarte requests return an empty body; never infer zero from a blank page.

@@ -85,6 +85,28 @@ function ResultCard({ result }: { result: EligibilityResult }) {
             <div className="player-line"><span>Verein</span><strong>{player.clubCode}</strong></div>
             <div className="player-line"><span>Ranglisten-Team</span><strong>{player.teamNumber ? `Mannschaft ${player.teamNumber}` : 'Nicht zugeordnet'}</strong></div>
             {target && <div className="player-line"><span>Zielmannschaft</span><strong>{target.number}. · {target.league}</strong></div>}
+            {result.teamAppearances && (
+              <div className="team-appearance">
+                <div className="player-line">
+                  <span>Einsätze in {result.teamAppearances.teamName}</span>
+                  <strong>{result.teamAppearances.count === null ? 'Nicht verfügbar' : result.teamAppearances.count}</strong>
+                </div>
+                {result.teamAppearances.count !== null && (
+                  <div className="appearance-rounds">
+                    {result.teamAppearances.rounds.length
+                      ? `Gespielt in Runde ${result.teamAppearances.rounds.join(', ')}`
+                      : 'Keine gespielten Runden gefunden'}
+                    {result.teamAppearances.sourceDate ? ` · Datenstand ${result.teamAppearances.sourceDate}` : ''}
+                  </div>
+                )}
+                {result.teamAppearances.error && <div className="appearance-error">{result.teamAppearances.error}</div>}
+                {result.teamAppearances.sourceUrl && (
+                  <a className="appearance-source" href={result.teamAppearances.sourceUrl} target="_blank" rel="noreferrer">
+                    Offizielle HMM-Einzelergebnisse öffnen
+                  </a>
+                )}
+              </div>
+            )}
             {result.remainingSubstitutions !== null && (
               <div className="player-line"><span>Verbleibende Ersatzeinsätze</span><strong>{result.remainingSubstitutions}</strong></div>
             )}

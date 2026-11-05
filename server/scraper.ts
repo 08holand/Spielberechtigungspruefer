@@ -32,11 +32,12 @@ export function parseRankingPage(html: string, fetchedAt = new Date().toISOStrin
         const foundLeague = line.match(leaguePattern);
         if (teamMatch?.[1] === clubCode && foundLeague) {
           const league = LEAGUES.find((item) => item.toLowerCase() === foundLeague[1].toLowerCase()) as League;
+          const leagueIndex = teamMatch[3].toLowerCase().indexOf(foundLeague[1].toLowerCase());
           currentTeam = {
             clubCode,
             number: Number(teamMatch[2]),
             league,
-            division: teamMatch[3].slice(foundLeague.index! + foundLeague[1].length).trim(),
+            division: teamMatch[3].slice(leagueIndex + foundLeague[1].length).trim(),
           };
           teams.push(currentTeam);
           reserveList = false;

@@ -42,7 +42,7 @@ export function evaluateEligibility(data: RankingData, input: CheckInput): Eligi
   const lowestTeamNumber = clubTeams.length ? Math.max(...clubTeams.map(({ number }) => number)) : null;
   const rules: RuleCheck[] = [];
   const warnings: string[] = [
-    'Die HMM-Rangliste enthält keine Spielberichte. Frühere Einsätze müssen anhand der offiziellen Spielberichte geprüft werden.',
+    'Die Rangliste enthält keine vereinsweite Einsatzhistorie. Einsätze der gewählten Zielmannschaft werden separat geladen; andere Mannschaften müssen zusätzlich geprüft werden.',
     'Die Quelle veröffentlicht keine vollständigen Landesliga- oder überregionalen Aufstellungen. Diese können hier nicht zuverlässig abgefragt werden.',
   ];
 
@@ -156,6 +156,7 @@ export function evaluateEligibility(data: RankingData, input: CheckInput): Eligi
         : 'Die Rangliste allein reicht für eine sichere Entscheidung nicht aus. Ergänze die Einsatzhistorie und gleiche sie mit den offiziellen Spielberichten ab.',
     player,
     targetTeam,
+    teamAppearances: null,
     remainingSubstitutions,
     checks: rules,
     warnings,
