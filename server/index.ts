@@ -6,7 +6,7 @@ import { CLUBS } from '../shared/clubs';
 import { LEAGUES, type DataStatus, type RankingData } from '../shared/types';
 import { evaluateEligibility } from './eligibility';
 import { fetchRankingData, SOURCE_URL } from './scraper';
-import { fetchTeamAppearances } from './team-appearances';
+import { fetchClubAppearanceHistory } from './team-appearances';
 
 const app = express();
 const port = Number(process.env.PORT) || 5000;
@@ -114,13 +114,20 @@ app.post('/api/check', async (req, res) => {
       : 'Die Rangliste wird noch geladen. Bitte versuche es gleich erneut.' });
     return;
   }
-  const result = evaluateEligibility(cache, parsed.data);
+  const initialResult = evaluateEligibility(cache, parsed.data);
+  if (!initialResult) {
+    res.status(404).json({ error: `Ranglistennummer ${parsed.data.ranking} wurde beim gewählten Verein nicht gefunden.` });
+    return;
+  }
+  const clubTeams = cache.teams.filter((team) => team.clubCode === parsed.data.clubCode);
+  const appearanceHistory = await fetchClubAppearanceHistory(clubTeams, initialResult.player.ranking);
+  const result = evaluateEligibility(cache, parsed.data, appearanceHistory);
   if (!result) {
     res.status(404).json({ error: `Ranglistennummer ${parsed.data.ranking} wurde beim gewählten Verein nicht gefunden.` });
     return;
   }
   const teamAppearances = result.targetTeam
-    ? await fetchTeamAppearances(result.targetTeam, result.player.ranking)
+    ? appearanceHistory.teams.find((team) => team.teamNumber === result.targetTeam?.number && team.league === result.targetTeam.league) ?? null
     : null;
   res.json({ ...result, teamAppearances });
 });

@@ -64,6 +64,7 @@ function ResultCard({ result }: { result: EligibilityResult }) {
   const VerdictIcon = result.verdict === 'eligible' ? BadgeCheck : result.verdict === 'ineligible' ? CircleX : hasUnknown ? CircleHelp : AlertTriangle;
   const player = result.player;
   const target = result.targetTeam;
+  const history = result.appearanceHistory;
 
   return (
     <section className={`panel result-panel ${panelClass}`} aria-live="polite" aria-labelledby="result-title">
@@ -105,6 +106,26 @@ function ResultCard({ result }: { result: EligibilityResult }) {
                     Offizielle HMM-Einzelergebnisse öffnen
                   </a>
                 )}
+              </div>
+            )}
+            {history && history.checkedTeams > 0 && (
+              <div className="season-history">
+                <div className="player-line">
+                  <span>Saison-Einsätze</span>
+                  <strong>{history.assignments.length}</strong>
+                </div>
+                <div className="appearance-rounds">
+                  {history.assignments.length
+                    ? history.assignments.map((appearance) => (
+                      `R${appearance.round}: ${appearance.teamName}${appearance.teamNumber === player.teamNumber ? ' (Stammteam)' : ''}`
+                    )).join(' · ')
+                    : 'Keine Einsätze auf den Mannschaftsseiten gefunden'}
+                </div>
+                <div className={history.complete ? 'history-completeness' : 'appearance-error'}>
+                  {history.complete
+                    ? `Ergebnisse für alle ${history.checkedTeams} HMM-Mannschaften berücksichtigt`
+                    : `Unvollständige Historie: ${history.availableTeams} von ${history.checkedTeams} Mannschaftsseiten verfügbar`}
+                </div>
               </div>
             )}
             {result.remainingSubstitutions !== null && (
@@ -369,14 +390,14 @@ function App() {
                   <button className="details-toggle" type="button" aria-expanded={historyOpen} onClick={() => setHistoryOpen((open) => !open)}>
                     <span>
                       <span className="details-title"><Clock3 size={16} aria-hidden="true" /> Einsatzhistorie ergänzen</span>
-                      <span className="details-subtitle">Optional · für Regeln zu Ersatz- und Höherklasseneinsätzen</span>
+                      <span className="details-subtitle">Nur für Einsätze, die nicht in den HMM-Ergebnissen stehen</span>
                     </span>
                     <ChevronDown size={17} className={`chevron-rotate ${historyOpen ? 'open' : ''}`} aria-hidden="true" />
                   </button>
 
                   {historyOpen && (
                     <div className="history-fields">
-                      <p className="history-intro"><Info size={14} aria-hidden="true" /> Diese Angaben stammen nicht zwingend aus der Rangliste. Nur ergänzen, wenn die Einsätze bekannt sind.</p>
+                      <p className="history-intro"><Info size={14} aria-hidden="true" /> Die HMM-Einsätze werden automatisch geladen. Hier nur zusätzliche Landesliga- oder überregionale Einsätze ergänzen.</p>
                       <label className="confirm-row">
                         <input type="checkbox" checked={historyConfirmed} onChange={(event) => setHistoryConfirmed(event.target.checked)} />
                         <span className="confirm-copy"><strong>Meine Angaben sind vollständig und bestätigt</strong><span>Ohne Bestätigung behandelt die Prüfung diese Angaben als unsicher.</span></span>

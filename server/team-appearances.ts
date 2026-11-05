@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import type { League, Team, TeamAppearance } from '../shared/types';
+import type { League, Team, TeamAppearance, TeamAppearanceHistory } from '../shared/types';
 
 const SEASON = 2026;
 const SOURCE_ROOT = 'https://www.hamburger-schachverband.de/hmmprog';
@@ -126,13 +126,16 @@ export function parseTeamAppearances(html: string, ranking: string): { count: nu
     const dates = [...text.matchAll(/\bStand:\s*(\d{2}\.\d{2}\.\d{4})/g)];
     return { count: rounds.length, rounds, sourceDate: dates.at(-1)?.[1] ?? null };
   }
-  return null;
+  const text = $('body').text().replace(/\s+/g, ' ');
+  const dates = [...text.matchAll(/\bStand:\s*(\d{2}\.\d{2}\.\d{4})/g)];
+  return { count: 0, rounds: [], sourceDate: dates.at(-1)?.[1] ?? null };
 }
 
 function unavailable(team: Team, teamName: string, sourceUrl: string | null, error: string): TeamAppearance {
   return {
     teamNumber: team.number,
     teamName,
+    league: team.league,
     count: null,
     rounds: [],
     sourceUrl,
@@ -174,10 +177,35 @@ export async function fetchTeamAppearances(team: Team, ranking: string): Promise
   return {
     teamNumber: team.number,
     teamName: query.teamName,
+    league: team.league,
     count: parsed.count,
     rounds: parsed.rounds,
     sourceUrl: query.url,
     sourceDate: parsed.sourceDate,
     error: usedStaleCache ? 'Die HMM-Seite war nicht erreichbar; angezeigt werden zwischengespeicherte Ergebnisse.' : null,
+  };
+}
+
+export async function fetchClubAppearanceHistory(teams: Team[], ranking: string): Promise<TeamAppearanceHistory> {
+  const teamResults = await Promise.all(teams.map((team) => fetchTeamAppearances(team, ranking)));
+  const assignments = teamResults.flatMap((team) => team.count === null
+    ? []
+    : team.rounds.map((round) => ({
+      round,
+      teamNumber: team.teamNumber,
+      teamName: team.teamName,
+      league: team.league,
+    })));
+  const availableTeams = teamResults.filter((team) => team.count !== null).length;
+  const unavailableTeams = teamResults.filter((team) => team.count === null).map((team) => team.teamName);
+
+  return {
+    assignments: assignments.sort((a, b) => a.round - b.round || a.teamNumber - b.teamNumber),
+    teams: teamResults,
+    checkedTeams: teams.length,
+    availableTeams,
+    complete: teams.length > 0 && availableTeams === teams.length,
+    unavailableTeams,
+    sourceDate: teamResults.find((team) => team.sourceDate)?.sourceDate ?? null,
   };
 }

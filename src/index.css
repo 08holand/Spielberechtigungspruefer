@@ -187,8 +187,10 @@ h1 { margin:0; max-width:800px; color:var(--pine-dark); font:600 clamp(46px,6.1v
 .player-line { display:flex; justify-content:space-between; gap:8px; color:#768178; font-size:10px; }
 .player-line strong { color:#495d50; font:500 10px var(--font-mono); text-align:right; }
 .team-appearance { display:grid; gap:5px; padding-top:7px; border-top:1px solid #dfe2d8; }
+.season-history { display:grid; gap:5px; padding-top:7px; border-top:1px solid #dfe2d8; }
 .appearance-rounds,.appearance-error { color:#768178; font-size:9px; line-height:1.45; }
 .appearance-error { color:#9a654f; }
+.history-completeness { color:#60856a; font-size:9px; line-height:1.45; }
 .appearance-source { color:#587261; font-size:9px; text-decoration:underline; text-underline-offset:2px; }
 .checks-heading { display:flex; align-items:center; justify-content:space-between; margin:1px 0 10px; color:#43574b; font-size:11px; font-weight:700; }
 .checks-heading span { color:#8b958c; font:10px var(--font-mono); font-weight:400; }

@@ -1,4 +1,4 @@
-import { LEAGUES, type AppearanceContext, type CheckInput, type EligibilityResult, type League, type RankingData, type RuleCheck, type Team } from '../shared/types';
+import { LEAGUES, type AppearanceContext, type CheckInput, type EligibilityResult, type League, type RankingData, type RuleCheck, type Team, type TeamAppearanceHistory } from '../shared/types';
 
 function rankingKey(value: string): string {
   const match = value.trim().match(/^(\d+)\s*([aA]?)$/);
@@ -24,7 +24,11 @@ const unknownContext: AppearanceContext = {
   latePermitConfirmed: false,
 };
 
-export function evaluateEligibility(data: RankingData, input: CheckInput): EligibilityResult | null {
+export function evaluateEligibility(
+  data: RankingData,
+  input: CheckInput,
+  appearanceHistory: TeamAppearanceHistory | null = null,
+): EligibilityResult | null {
   const player = data.players.find(
     (entry) => entry.clubCode === input.clubCode && rankingKey(entry.ranking) === rankingKey(input.ranking),
   );
@@ -40,11 +44,35 @@ export function evaluateEligibility(data: RankingData, input: CheckInput): Eligi
     ) ?? null;
   const clubTeams = data.teams.filter((team) => team.clubCode === input.clubCode);
   const lowestTeamNumber = clubTeams.length ? Math.max(...clubTeams.map(({ number }) => number)) : null;
+  const assignments = appearanceHistory?.assignments ?? [];
+  const historyComplete = appearanceHistory?.complete ?? false;
+  const recordedSubstituteAppearances = assignments.filter((appearance) => player.reserve
+    ? appearance.teamNumber !== lowestTeamNumber
+    : player.teamNumber !== null && appearance.teamNumber < player.teamNumber).length;
+  const recordedParallelTeamUse = Boolean(targetTeam && assignments.some(
+    (appearance) => appearance.teamNumber !== targetTeam.number && appearance.league === targetTeam.league,
+  ));
+  const substituteAppearances = historyComplete
+    ? recordedSubstituteAppearances
+    : Math.max(recordedSubstituteAppearances, context.substituteAppearances);
+  const hasSubstituteLimitReached = recordedSubstituteAppearances >= 3
+    || (context.confirmed && context.substituteAppearances >= 3);
+  const parallelTeamUsed = recordedParallelTeamUse || (context.confirmed && context.parallelTeamUsed);
   const rules: RuleCheck[] = [];
-  const warnings: string[] = [
-    'Die Rangliste enthält keine vereinsweite Einsatzhistorie. Einsätze der gewählten Zielmannschaft werden separat geladen; andere Mannschaften müssen zusätzlich geprüft werden.',
-    'Die Quelle veröffentlicht keine vollständigen Landesliga- oder überregionalen Aufstellungen. Diese können hier nicht zuverlässig abgefragt werden.',
-  ];
+  const warnings: string[] = appearanceHistory
+    ? [
+      historyComplete
+        ? `Die Saison-Einsatzhistorie wurde für alle ${appearanceHistory.checkedTeams} HMM-Mannschaften dieses Vereins geladen.`
+        : `Die Saison-Einsatzhistorie ist unvollständig (${appearanceHistory.availableTeams} von ${appearanceHistory.checkedTeams} Mannschaftsseiten geladen).`,
+      ...(appearanceHistory.unavailableTeams.length
+        ? [`Nicht abrufbar: ${appearanceHistory.unavailableTeams.join(', ')}.`]
+        : []),
+      'Landesliga- und überregionale Mannschaftsaufstellungen sind in der Quelle nicht enthalten.',
+    ]
+    : [
+      'Die Rangliste enthält keine vereinsweite Einsatzhistorie. Bisherige Einsätze müssen bestätigt werden.',
+      'Landesliga- und überregionale Mannschaftsaufstellungen sind in der Quelle nicht enthalten.',
+    ];
 
   if (player.lateRegistration && input.targetLeague === 'Landesliga') {
     rules.push(check('§16', 'Nachmeldung in der Landesliga', 'Nachmeldungen sind für Landesliga-Mannschaften ausgeschlossen.', 'fail'));
@@ -102,12 +130,12 @@ export function evaluateEligibility(data: RankingData, input: CheckInput): Eligi
   } else if (player.reserve && lowestTeamNumber === targetTeam.number) {
     rules.push(check('§13', 'Reserveliste und Zielmannschaft', 'Die Reserveliste darf laut Regelung unbegrenzt in der niedrigsten Mannschaft eingesetzt werden.', 'pass'));
   } else if (player.reserve) {
-    if (context.confirmed && context.substituteAppearances >= 3) {
-      rules.push(check('§15', 'Ersatzeinsätze', 'Bereits drei Ersatzeinsätze angegeben; ein weiterer Einsatz in einer höheren Mannschaft ist nicht zulässig.', 'fail'));
-    } else if (!context.confirmed) {
-      rules.push(check('§15', 'Ersatzeinsätze', 'Die Rangliste bestätigt die Reserveliste, aber nicht die Zahl der bisherigen Einsätze in höheren Mannschaften.', 'unknown'));
+    if (hasSubstituteLimitReached) {
+      rules.push(check('§15', 'Ersatzeinsätze', `Bereits ${Math.max(recordedSubstituteAppearances, context.substituteAppearances)} Ersatzeinsätze erfasst; ein weiterer Einsatz in einer höheren Mannschaft ist nicht zulässig.`, 'fail'));
+    } else if (!historyComplete && !context.confirmed) {
+      rules.push(check('§15', 'Ersatzeinsätze', 'Die Einsatzhistorie ist nicht vollständig genug, um die bisherigen Ersatzeinsätze sicher zu zählen.', 'unknown'));
     } else {
-      rules.push(check('§15', 'Ersatzeinsätze', `Noch ${Math.max(0, 3 - context.substituteAppearances)} von 3 Ersatzeinsätzen verfügbar.`, 'pass'));
+      rules.push(check('§15', 'Ersatzeinsätze', `Noch ${Math.max(0, 3 - substituteAppearances)} von 3 Ersatzeinsätzen verfügbar.`, 'pass'));
     }
   } else if (!player.teamNumber || !player.league) {
     rules.push(check('§13', 'Mannschaftszuordnung', 'Für diesen Eintrag ist keine reguläre Mannschaftszuordnung in der Quelle erkennbar.', 'unknown'));
@@ -117,30 +145,31 @@ export function evaluateEligibility(data: RankingData, input: CheckInput): Eligi
     rules.push(check('§13', 'Spiel in einer niedrigeren Mannschaft', `Die Meldung für Mannschaft ${player.teamNumber} belegt keine Spielberechtigung für die niedrigere Mannschaft ${targetTeam.number}.`, 'fail'));
   } else {
     const parallelClass = targetTeam.league === player.league;
-    if (parallelClass && context.confirmed && context.parallelTeamUsed) {
+    if (parallelClass && parallelTeamUsed) {
       rules.push(check('§15', 'Parallele Mannschaften', 'Es wurde angegeben, dass der Spieler bereits für eine andere Mannschaft derselben oder einer parallelen Klasse eingesetzt wurde.', 'fail'));
-    } else if (parallelClass && !context.confirmed) {
-      rules.push(check('§15', 'Parallele Mannschaften', 'Ein Einsatz für eine andere Mannschaft derselben oder einer parallelen Klasse muss ausgeschlossen werden.', 'unknown'));
-    } else if (context.confirmed && context.substituteAppearances >= 3) {
-      rules.push(check('§15', 'Ersatzeinsätze', 'Bereits drei Ersatzeinsätze aus einer niedrigeren Mannschaft angegeben.', 'fail'));
-    } else if (!context.confirmed) {
-      rules.push(check('§15', 'Ersatzeinsätze', 'Die Rangliste zeigt die niedrigere Stamm-Mannschaft. Bisherige Ersatzeinsätze sind unbekannt.', 'unknown'));
+    } else if (parallelClass && !historyComplete && !context.confirmed) {
+      rules.push(check('§15', 'Parallele Mannschaften', 'Die Einsatzhistorie ist nicht vollständig genug, um parallele Mannschaftseinsätze auszuschließen.', 'unknown'));
+    } else if (hasSubstituteLimitReached) {
+      rules.push(check('§15', 'Ersatzeinsätze', `Bereits ${Math.max(recordedSubstituteAppearances, context.substituteAppearances)} Ersatzeinsätze aus einer niedrigeren Mannschaft erfasst.`, 'fail'));
+    } else if (!historyComplete && !context.confirmed) {
+      rules.push(check('§15', 'Ersatzeinsätze', 'Die Einsatzhistorie ist nicht vollständig genug, um die bisherigen Ersatzeinsätze sicher zu zählen.', 'unknown'));
     } else {
-      rules.push(check('§15', 'Ersatzeinsätze', `Ersatz aus Mannschaft ${player.teamNumber}; noch ${Math.max(0, 3 - context.substituteAppearances)} Einsätze laut Angabe verfügbar.`, 'pass'));
+      rules.push(check('§15', 'Ersatzeinsätze', `Ersatz aus Mannschaft ${player.teamNumber}; noch ${Math.max(0, 3 - substituteAppearances)} von 3 Ersatzeinsätzen verfügbar.`, 'pass'));
     }
   }
 
-  if (context.confirmed && context.parallelTeamUsed && !rules.some((rule) => rule.paragraph === '§15' && rule.status === 'fail')) {
+  if (parallelTeamUsed && !rules.some((rule) => rule.paragraph === '§15' && rule.status === 'fail')) {
     rules.push(check('§15', 'Mehrfachaufstellung', 'Eine Aufstellung für dieselbe oder eine parallele Klasse wurde angegeben.', 'fail'));
-  } else if (context.confirmed && !context.parallelTeamUsed) {
+  } else if ((historyComplete || context.confirmed) && targetTeam && !parallelTeamUsed) {
     rules.push(check('§15', 'Mehrfachaufstellung', 'Kein Einsatz für eine weitere Mannschaft derselben oder parallelen Klasse angegeben.', 'pass'));
   }
 
   const hasFailure = rules.some((rule) => rule.status === 'fail');
   const hasUnknown = rules.some((rule) => rule.status === 'unknown');
   const isSubstitute = player.reserve || Boolean(targetTeam && player.teamNumber !== targetTeam.number);
-  const remainingSubstitutions = context.confirmed && isSubstitute && !(player.reserve && lowestTeamNumber === targetTeam?.number)
-    ? Math.max(0, 3 - context.substituteAppearances)
+  const substituteHistoryConfirmed = historyComplete || context.confirmed || recordedSubstituteAppearances >= 3;
+  const remainingSubstitutions = substituteHistoryConfirmed && isSubstitute && !(player.reserve && lowestTeamNumber === targetTeam?.number)
+    ? Math.max(0, 3 - substituteAppearances)
     : null;
   const restricted = remainingSubstitutions === 1;
   const verdict: EligibilityResult['verdict'] = hasFailure ? 'ineligible' : hasUnknown || restricted ? 'conditional' : 'eligible';
@@ -157,6 +186,7 @@ export function evaluateEligibility(data: RankingData, input: CheckInput): Eligi
     player,
     targetTeam,
     teamAppearances: null,
+    appearanceHistory,
     remainingSubstitutions,
     checks: rules,
     warnings,

@@ -54,11 +54,27 @@ export interface RuleCheck { paragraph: string; title: string; detail: string; s
 export interface TeamAppearance {
   teamNumber: number;
   teamName: string;
+  league: League;
   count: number | null;
   rounds: number[];
   sourceUrl: string | null;
   sourceDate: string | null;
   error: string | null;
+}
+export interface TeamAppearanceAssignment {
+  round: number;
+  teamNumber: number;
+  teamName: string;
+  league: League;
+}
+export interface TeamAppearanceHistory {
+  assignments: TeamAppearanceAssignment[];
+  teams: TeamAppearance[];
+  checkedTeams: number;
+  availableTeams: number;
+  complete: boolean;
+  unavailableTeams: string[];
+  sourceDate: string | null;
 }
 export interface EligibilityResult {
   verdict: 'eligible' | 'ineligible' | 'conditional';
@@ -67,6 +83,7 @@ export interface EligibilityResult {
   player: Player;
   targetTeam: Team | null;
   teamAppearances: TeamAppearance | null;
+  appearanceHistory: TeamAppearanceHistory | null;
   remainingSubstitutions: number | null;
   checks: RuleCheck[];
   warnings: string[];
