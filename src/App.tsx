@@ -177,7 +177,6 @@ function App() {
   const [historyConfirmed, setHistoryConfirmed] = useState(false);
   const [higherAppearances, setHigherAppearances] = useState(0);
   const [substituteAppearances, setSubstituteAppearances] = useState(0);
-  const [landesligaTotal, setLandesligaTotal] = useState(0);
   const [sameRoundHigher, setSameRoundHigher] = useState(false);
   const [sameWeekendHigher, setSameWeekendHigher] = useState(false);
   const [parallelTeamUsed, setParallelTeamUsed] = useState(false);
@@ -259,13 +258,12 @@ function App() {
       setFormError('Bitte wählen Sie eine gültige Liga aus.');
       return;
     }
-    const hasHistoryData = historyConfirmed || higherAppearances > 0 || substituteAppearances > 0 || landesligaTotal > 0
+    const hasHistoryData = historyConfirmed || higherAppearances > 0 || substituteAppearances > 0
       || sameRoundHigher || sameWeekendHigher || parallelTeamUsed || latePermitConfirmed;
     const context: AppearanceContext | undefined = hasHistoryData ? {
       confirmed: historyConfirmed,
       higherAppearances,
       substituteAppearances,
-      landesligaTotal,
       sameRoundHigher,
       sameWeekendHigher,
       parallelTeamUsed,
@@ -397,28 +395,24 @@ function App() {
 
                   {historyOpen && (
                     <div className="history-fields">
-                      <p className="history-intro"><Info size={14} aria-hidden="true" /> Die HMM-Einsätze werden automatisch geladen. Hier nur zusätzliche Landesliga- oder überregionale Einsätze ergänzen.</p>
+                      <p className="history-intro"><Info size={14} aria-hidden="true" /> Die HMM-Einsätze werden automatisch geladen. Hier nur zusätzliche Einsätze ergänzen, die nicht in den HMM-Ergebnissen stehen.</p>
                       <label className="confirm-row">
                         <input type="checkbox" checked={historyConfirmed} onChange={(event) => setHistoryConfirmed(event.target.checked)} />
                         <span className="confirm-copy"><strong>Meine Angaben sind vollständig und bestätigt</strong><span>Ohne Bestätigung behandelt die Prüfung diese Angaben als unsicher.</span></span>
                       </label>
                       <div className="history-grid">
                         <div className="history-number">
-                          <label htmlFor="higher-appearances">Einsätze in höheren Ligen</label>
+                          <label htmlFor="higher-appearances">Einsätze in Bundesliga/Oberliga-Nord</label>
                           <input id="higher-appearances" className="small-number" type="number" min="0" max="99" value={higherAppearances} onChange={(event) => setHigherAppearances(Math.max(0, Number(event.target.value)))} />
                         </div>
                         <div className="history-number">
-                          <label htmlFor="substitute-appearances">Davon als Ersatzspieler</label>
+                          <label htmlFor="substitute-appearances">Ersatz-Einsätze bei Lücken</label>
                           <input id="substitute-appearances" className="small-number" type="number" min="0" max="99" value={substituteAppearances} onChange={(event) => setSubstituteAppearances(Math.max(0, Number(event.target.value)))} />
-                        </div>
-                        <div className="history-number">
-                          <label htmlFor="landesliga-total">Einsätze Landesliga + höher</label>
-                          <input id="landesliga-total" className="small-number" type="number" min="0" max="99" value={landesligaTotal} onChange={(event) => setLandesligaTotal(Math.max(0, Number(event.target.value)))} />
                         </div>
                       </div>
                       <div className="history-checks">
-                        <label className="check-option"><input type="checkbox" checked={sameRoundHigher} onChange={(event) => setSameRoundHigher(event.target.checked)} /> In dieser Runde bereits in einer höheren Liga eingesetzt</label>
-                        <label className="check-option"><input type="checkbox" checked={sameWeekendHigher} onChange={(event) => setSameWeekendHigher(event.target.checked)} /> Am selben Spieltagswochenende bereits höher eingesetzt</label>
+                        <label className="check-option"><input type="checkbox" checked={sameRoundHigher} onChange={(event) => setSameRoundHigher(event.target.checked)} /> In dieser Runde bereits in Bundesliga/Oberliga-Nord eingesetzt</label>
+                        <label className="check-option"><input type="checkbox" checked={sameWeekendHigher} onChange={(event) => setSameWeekendHigher(event.target.checked)} /> Am selben Wochenende bereits in Bundesliga/Oberliga-Nord eingesetzt</label>
                         <label className="check-option"><input type="checkbox" checked={parallelTeamUsed} onChange={(event) => setParallelTeamUsed(event.target.checked)} /> Bereits für ein Team derselben oder parallelen Klasse eingesetzt</label>
                         <label className="check-option"><input type="checkbox" checked={latePermitConfirmed} onChange={(event) => setLatePermitConfirmed(event.target.checked)} /> Erforderliche Spielgenehmigung für Nachmeldung liegt vor</label>
                       </div>

@@ -35,8 +35,8 @@ function status(): DataStatus {
       sourceMode === 'bundled'
         ? 'Offline-Kopie der HMM-Rangliste, Quellenstand 19. Juni 2026. Die Live-Aktualisierung ist derzeit nicht erreichbar.'
         : 'Die Rangliste ist auf dem Stand vom 19. Juni 2026; Einzelergebnisse werden für ausgewählte Mannschaften separat geladen.',
-      'Einsatzhistorien werden bei einer ausgewählten Mannschaft aus den offiziellen Einzelergebnissen gelesen.',
-      'Landesliga- und überregionale Mannschaftsaufstellungen sind in der Quelle nicht enthalten.',
+      'Die Saison-Einsatzhistorie wird beim Prüfen aus den offiziellen Einzelergebnissen geladen.',
+      'Externe Wettbewerbe sind nicht in der automatisch geladenen Einsatzhistorie enthalten.',
     ],
     error: refreshError,
   };
@@ -94,7 +94,6 @@ const requestSchema = z.object({
     confirmed: z.boolean(),
     higherAppearances: z.number().int().min(0).max(20),
     substituteAppearances: z.number().int().min(0).max(20),
-    landesligaTotal: z.number().int().min(0).max(30),
     sameRoundHigher: z.boolean(),
     sameWeekendHigher: z.boolean(),
     parallelTeamUsed: z.boolean(),

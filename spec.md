@@ -15,7 +15,6 @@ Chess players in the Hamburger Schachverband need to know whether they are eligi
 1. **Ranglistennummer** — numeric input. The player's position number on their club's ranking list (e.g. `3` for the 3rd player of a team).
 2. **Mannschaft** — dropdown of all 39 Hamburger Schachverband member clubs, default value: `FC St. Pauli von 1910 e.V., Schachabteilung`. Sorted alphabetically.
 3. **Liga** — dropdown of the target league the player wants to play in. Values (per §11):
-   - Landesliga
    - Stadtliga
    - Bezirksliga
    - Kreisliga
@@ -39,13 +38,11 @@ The app evaluates the following rules in order and returns a verdict with an exp
 - The 1st team of a club holds positions 1–8 (+ up to 2 substitutes: 9, 10).
 - The 2nd team holds positions 11–18 (+ 19, 20), and so on in increments of 10.
 - Youth players (≤20 years at registration deadline) may extend a team's roster at positions 17 and 18.
-- In the Landesliga, only players registered specifically for the Landesliga team may play; no late registrations (Nachmeldungen) are possible.
 
-**§14 — Einsatz von Spielern der Bundesligen, Oberliga-Nord und Landesliga**
-- A player who has been used as a substitute in the Bundesliga, Oberliga-Nord, or Landesliga loses eligibility for the same round number in all lower-ranked teams.
-- A player who has been used as a substitute **three times** in the Bundesliga, Oberliga-Nord, or Landesliga may no longer play in any lower-ranked team from that round onward.
+**§14 — Einsatz von Spielern der Bundesligen und Oberliga-Nord**
+- A player who has been used as a substitute in the Bundesliga or Oberliga-Nord loses eligibility for the same round number in all lower-ranked teams.
+- A player who has been used as a substitute **three times** in the Bundesliga or Oberliga-Nord may no longer play in any lower-ranked team from that round onward.
 - For leagues with double match-day weekends: the restriction applies to the entire weekend, not just the same round number.
-- A Landesliga player who has not yet played 3 times in higher leagues may still play in the Landesliga, but their combined appearances in the Landesliga and higher leagues must not exceed 9 total.
 
 **§15 — Einsatz von Ersatzspielern in der Stadtliga bis zur letzten Spielklasse**
 - A substitute player from a lower-ranked team or reserve list may be used in a higher-ranked team.
@@ -59,7 +56,6 @@ The app evaluates the following rules in order and returns a verdict with an exp
 - Each club may register one player per team with an "a-number" (e.g. `2a`), provided a preliminary play permit has been requested from the Landesturnierleiter, or the player holds a valid DSB play permit.
 - The a-number player is inserted directly behind the player with the same base number (e.g. `2a` behind `2`).
 - An a-number player is only eligible for the specific team they were registered for.
-- Late registrations are excluded for Landesliga teams.
 - If a player on a Stadtliga–Kreisklasse team dies during the season, the club may register one additional a-number player below the deceased player's position.
 - Any number of reserve players may be added at any time; they are appended to the end of the ranking list.
 - Late registrations must be submitted no later than the day of the player's first appearance.
@@ -69,7 +65,7 @@ The app evaluates the following rules in order and returns a verdict with an exp
 After submitting the form, the app displays:
 
 - ✅ **Spielberechtigt** — the player is eligible, with a brief explanation of which rules were checked.
-- ❌ **Nicht spielberechtigt** — the player is not eligible, with a specific reason citing the relevant paragraph (e.g. "§14: Spieler wurde bereits 3× in der Landesliga eingesetzt").
+- ❌ **Nicht spielberechtigt** — the player is not eligible, with a specific reason citing the relevant paragraph (e.g. "§14: Spieler wurde bereits 3× in einer höheren Spielklasse eingesetzt").
 - ⚠️ **Eingeschränkt spielberechtigt** — eligible with conditions (e.g. "§15: Darf höchstens noch 1× als Ersatzspieler eingesetzt werden").
 
 The explanation is shown in German.
@@ -80,7 +76,7 @@ The explanation is shown in German.
 
 1. The form renders with all three fields; Mannschaft defaults to `FC St. Pauli von 1910 e.V., Schachabteilung`.
 2. The Mannschaft dropdown lists all 39 Hamburger Schachverband member clubs, sorted alphabetically.
-3. The Liga dropdown lists all 6 league levels from §11.
+3. The Liga dropdown lists the 5 supported HMM league levels.
 4. Submitting the form with a valid Ranglistennummer, Mannschaft, and Liga returns a verdict within 3 seconds.
 5. The verdict correctly applies all rules from §13–§16 based on the scraped ranking list data.
 6. If the player's Ranglistennummer is not found in the selected club's ranking list, the app shows an appropriate error message.

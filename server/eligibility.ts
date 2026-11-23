@@ -17,7 +17,6 @@ const unknownContext: AppearanceContext = {
   confirmed: false,
   higherAppearances: 0,
   substituteAppearances: 0,
-  landesligaTotal: 0,
   sameRoundHigher: false,
   sameWeekendHigher: false,
   parallelTeamUsed: false,
@@ -55,9 +54,12 @@ export function evaluateEligibility(
   const substituteAppearances = historyComplete
     ? recordedSubstituteAppearances
     : Math.max(recordedSubstituteAppearances, context.substituteAppearances);
-  const hasSubstituteLimitReached = recordedSubstituteAppearances >= 3
-    || (context.confirmed && context.substituteAppearances >= 3);
-  const parallelTeamUsed = recordedParallelTeamUse || (context.confirmed && context.parallelTeamUsed);
+  const hasSubstituteLimitReached = historyComplete
+    ? recordedSubstituteAppearances >= 3
+    : recordedSubstituteAppearances >= 3 || (context.confirmed && context.substituteAppearances >= 3);
+  const parallelTeamUsed = historyComplete
+    ? recordedParallelTeamUse
+    : recordedParallelTeamUse || (context.confirmed && context.parallelTeamUsed);
   const rules: RuleCheck[] = [];
   const warnings: string[] = appearanceHistory
     ? [
@@ -67,16 +69,12 @@ export function evaluateEligibility(
       ...(appearanceHistory.unavailableTeams.length
         ? [`Nicht abrufbar: ${appearanceHistory.unavailableTeams.join(', ')}.`]
         : []),
-      'Landesliga- und überregionale Mannschaftsaufstellungen sind in der Quelle nicht enthalten.',
     ]
     : [
       'Die Rangliste enthält keine vereinsweite Einsatzhistorie. Bisherige Einsätze müssen bestätigt werden.',
-      'Landesliga- und überregionale Mannschaftsaufstellungen sind in der Quelle nicht enthalten.',
     ];
 
-  if (player.lateRegistration && input.targetLeague === 'Landesliga') {
-    rules.push(check('§16', 'Nachmeldung in der Landesliga', 'Nachmeldungen sind für Landesliga-Mannschaften ausgeschlossen.', 'fail'));
-  } else if (player.lateRegistration && !context.latePermitConfirmed) {
+  if (player.lateRegistration && !context.latePermitConfirmed) {
     rules.push(check('§16', 'Nachmeldung und Spielberechtigung', 'Die a-Nummer ist in der Rangliste. Ob die erforderliche Spielgenehmigung vorliegt, muss noch bestätigt werden.', 'unknown'));
   } else if (player.lateRegistration) {
     rules.push(check('§16', 'Nachmeldung und Spielberechtigung', 'Die notwendige Spielgenehmigung wurde als vorhanden angegeben.', 'pass'));
@@ -84,48 +82,17 @@ export function evaluateEligibility(
     rules.push(check('§16', 'Nachmeldung', 'Keine a-Nummer erkannt; für diesen Spieler ist die Nachmelderegel nicht einschlägig.', 'pass'));
   }
 
-  if (!player.reserve && player.league === 'Landesliga' && input.targetLeague !== 'Landesliga') {
-    if (context.confirmed && context.higherAppearances >= 3) {
-      rules.push(check('§14', 'Einsätze in höheren Spielklassen', 'Mindestens drei höhere Einsätze angegeben: Einsätze in niedrigeren Klassen sind nicht mehr zulässig.', 'fail'));
-    } else if (context.confirmed && (context.sameRoundHigher || context.sameWeekendHigher)) {
-      rules.push(check('§14', 'Einsatz in derselben Runde bzw. am selben Wochenende', 'Ein Einsatz in einer höheren Spielklasse schließt die parallele Aufstellung in einer niedrigeren Klasse aus.', 'fail'));
-    } else if (context.confirmed) {
-      rules.push(check('§14', 'Einsätze in höheren Spielklassen', 'Die bestätigte Einsatzhistorie erfüllt die abgefragten Sperren nicht.', 'pass'));
-    } else {
-      rules.push(check('§14', 'Einsätze in höheren Spielklassen', 'Vorherige Einsätze, Rundennummern und gegebenenfalls das gesamte Doppelspiel-Wochenende sind nicht in der Rangliste enthalten.', 'unknown'));
-    }
-  } else if (!player.reserve && leagueIndex(player.league) >= 0 && leagueIndex(player.league) < leagueIndex(input.targetLeague)) {
-    if (context.confirmed && context.higherAppearances >= 3) {
-      rules.push(check('§14', 'Einsätze in höheren Spielklassen', 'Mindestens drei höhere Einsätze angegeben: Einsätze in niedrigeren Klassen sind nicht mehr zulässig.', 'fail'));
-    } else if (context.confirmed && (context.sameRoundHigher || context.sameWeekendHigher)) {
-      rules.push(check('§14', 'Einsatz in derselben Runde bzw. am selben Wochenende', 'Ein Einsatz in einer höheren Spielklasse schließt die parallele Aufstellung in einer niedrigeren Klasse aus.', 'fail'));
-    } else if (!context.confirmed) {
-      rules.push(check('§14', 'Einsätze in höheren Spielklassen', 'Runden- und Wochenend-Einsätze sind aus der Rangliste nicht ersichtlich.', 'unknown'));
-    } else {
-      rules.push(check('§14', 'Einsätze in höheren Spielklassen', 'Die angegebenen höheren Einsätze begründen keine bekannte Sperre.', 'pass'));
-    }
+  if (context.confirmed && context.higherAppearances >= 3) {
+    rules.push(check('§14', 'Einsätze in höheren Spielklassen', 'Mindestens drei Einsätze in Bundesliga oder Oberliga-Nord angegeben; Einsätze in niedrigeren HMM-Ligen sind nicht zulässig.', 'fail'));
+  } else if (context.confirmed && (context.sameRoundHigher || context.sameWeekendHigher)) {
+    rules.push(check('§14', 'Einsatz in derselben Runde bzw. am selben Wochenende', 'Ein Einsatz in Bundesliga oder Oberliga-Nord schließt die parallele Aufstellung in einer niedrigeren HMM-Liga aus.', 'fail'));
   } else if (context.confirmed) {
-    rules.push(check('§14', 'Einsätze in höheren Spielklassen', 'Keine sperrenden Einsätze in höheren Spielklassen, derselben Runde oder am selben Wochenende angegeben.', 'pass'));
+    rules.push(check('§14', 'Einsätze in höheren Spielklassen', 'Die bestätigten Einsätze aus Bundesliga und Oberliga-Nord begründen keine bekannte Sperre.', 'pass'));
   } else {
-    rules.push(check('§14', 'Einsätze in höheren Spielklassen', 'Die Rangliste weist keinen Einsatz in einer höheren Spielklasse aus. Frühere Spielberichte bleiben separat zu prüfen.', 'unknown'));
+    rules.push(check('§14', 'Einsätze in höheren Spielklassen', 'Einsätze in Bundesliga oder Oberliga-Nord stehen nicht in den HMM-Ergebnissen und müssen separat bestätigt werden.', 'unknown'));
   }
 
-  if (input.targetLeague === 'Landesliga') {
-    const publishedLandesligaTeams = data.teams.some((team) => team.league === 'Landesliga');
-    if (player.lateRegistration) {
-      rules.push(check('§13', 'Landesliga-Aufstellung', 'Die Landesliga-Rangliste führt diese a-Nummer als Nachmeldung auf; Nachmeldungen sind dort ausgeschlossen.', 'fail'));
-    } else if (!publishedLandesligaTeams) {
-      rules.push(check('§13', 'Landesliga-Aufstellung', 'Die veröffentlichte Datenquelle enthält keine vollständige Landesliga-Aufstellung. Eine Registrierung für diese Klasse kann hier nicht bestätigt werden.', 'unknown'));
-    } else if (player.league !== 'Landesliga' || player.reserve) {
-      rules.push(check('§13', 'Landesliga-Aufstellung', 'Die vollständige Rangliste belegt keine reguläre Registrierung für eine Landesliga-Mannschaft.', 'fail'));
-    } else if (context.confirmed && context.landesligaTotal + context.higherAppearances > 9) {
-      rules.push(check('§14', 'Neun-Einsätze-Grenze', 'Mehr als neun kombinierte Einsätze in Landesliga und höheren Klassen angegeben.', 'fail'));
-    } else if (context.confirmed) {
-      rules.push(check('§14', 'Neun-Einsätze-Grenze', 'Die angegebene Gesamtzahl überschreitet neun Einsätze nicht.', 'pass'));
-    } else {
-      rules.push(check('§14', 'Neun-Einsätze-Grenze', 'Die Zahl kombinierter Einsätze in der Landesliga und höheren Klassen muss anhand der Spielberichte bestätigt werden.', 'unknown'));
-    }
-  } else if (!targetTeam) {
+  if (!targetTeam) {
     rules.push(check('§13', 'Mannschaft und Brettfolge', 'Für diese Klasse ist keine Zielmannschaft in der veröffentlichten Rangliste verfügbar. Die Mannschaftszuordnung und Brettfolge lassen sich deshalb nicht bestätigen.', 'unknown'));
   } else if (player.reserve && lowestTeamNumber === targetTeam.number) {
     rules.push(check('§13', 'Reserveliste und Zielmannschaft', 'Die Reserveliste darf laut Regelung unbegrenzt in der niedrigsten Mannschaft eingesetzt werden.', 'pass'));
@@ -146,7 +113,7 @@ export function evaluateEligibility(
   } else {
     const parallelClass = targetTeam.league === player.league;
     if (parallelClass && parallelTeamUsed) {
-      rules.push(check('§15', 'Parallele Mannschaften', 'Es wurde angegeben, dass der Spieler bereits für eine andere Mannschaft derselben oder einer parallelen Klasse eingesetzt wurde.', 'fail'));
+      rules.push(check('§15', 'Parallele Mannschaften', 'Die Einsatzhistorie zeigt einen Einsatz für eine andere Mannschaft derselben oder einer parallelen Klasse.', 'fail'));
     } else if (parallelClass && !historyComplete && !context.confirmed) {
       rules.push(check('§15', 'Parallele Mannschaften', 'Die Einsatzhistorie ist nicht vollständig genug, um parallele Mannschaftseinsätze auszuschließen.', 'unknown'));
     } else if (hasSubstituteLimitReached) {
@@ -159,7 +126,7 @@ export function evaluateEligibility(
   }
 
   if (parallelTeamUsed && !rules.some((rule) => rule.paragraph === '§15' && rule.status === 'fail')) {
-    rules.push(check('§15', 'Mehrfachaufstellung', 'Eine Aufstellung für dieselbe oder eine parallele Klasse wurde angegeben.', 'fail'));
+    rules.push(check('§15', 'Mehrfachaufstellung', 'Die Einsatzhistorie zeigt einen Einsatz für eine andere Mannschaft derselben oder einer parallelen Klasse.', 'fail'));
   } else if ((historyComplete || context.confirmed) && targetTeam && !parallelTeamUsed) {
     rules.push(check('§15', 'Mehrfachaufstellung', 'Kein Einsatz für eine weitere Mannschaft derselben oder parallelen Klasse angegeben.', 'pass'));
   }
@@ -179,10 +146,14 @@ export function evaluateEligibility(
     explanation: restricted
       ? 'Der Einsatz ist laut den angegebenen bisherigen Einsätzen noch höchstens einmal als Ersatzspieler möglich (§15).'
       : verdict === 'eligible'
-      ? 'Die geprüften Angaben zeigen keine Sperre. Bitte gleiche die Einsatzhistorie vor dem Aufstellen mit den offiziellen Spielberichten ab.'
+      ? 'Die Ranglisten- und erfassten HMM-Ergebnisdaten zeigen keine Sperre.'
       : verdict === 'ineligible'
         ? 'Mindestens eine angegebene oder aus der Rangliste erkennbare Regel steht dem Einsatz entgegen.'
-        : 'Die Rangliste allein reicht für eine sichere Entscheidung nicht aus. Ergänze die Einsatzhistorie und gleiche sie mit den offiziellen Spielberichten ab.',
+        : appearanceHistory && historyComplete
+          ? 'Alle erfassten HMM-Einsätze wurden berücksichtigt. Prüfen Sie noch die oben genannten offenen Angaben.'
+          : appearanceHistory
+            ? 'Die HMM-Einsatzhistorie konnte nicht vollständig geladen werden. Prüfen Sie die fehlenden Mannschaftsseiten und offenen Angaben.'
+            : 'Die Rangliste allein reicht für eine sichere Entscheidung nicht aus. Ergänzen Sie die fehlende Einsatzhistorie.',
     player,
     targetTeam,
     teamAppearances: null,

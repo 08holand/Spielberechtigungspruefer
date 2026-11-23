@@ -32,10 +32,15 @@ test('counts only populated round cells, not totals or rating columns', () => {
   });
 });
 
-test('does not report zero when the player is missing from the results page', () => {
+test('reports zero only when a valid results table omits the player', () => {
   const html = `<table>
     <tr><td>Nr.</td><td>Name / Runde</td><td>1 VDF</td><td>Gesamt</td></tr>
     <tr><td>51</td><td>Schüttler, Thomas</td><td>½</td><td>0.5 (1)</td></tr>
   </table>`;
-  assert.equal(parseTeamAppearances(html, '999'), null);
+  assert.deepEqual(parseTeamAppearances(html, '999'), {
+    count: 0,
+    rounds: [],
+    sourceDate: null,
+  });
+  assert.equal(parseTeamAppearances('\r\n\r\n', '999'), null);
 });

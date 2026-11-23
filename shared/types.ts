@@ -1,4 +1,4 @@
-export const LEAGUES = ['Landesliga', 'Stadtliga', 'Bezirksliga', 'Kreisliga', 'Kreisklasse', 'Basisklasse'] as const;
+export const LEAGUES = ['Stadtliga', 'Bezirksliga', 'Kreisliga', 'Kreisklasse', 'Basisklasse'] as const;
 export type League = typeof LEAGUES[number];
 export interface Club { code: string; name: string }
 export interface Team { clubCode: string; number: number; league: League; division: string }
@@ -37,7 +37,6 @@ export interface AppearanceContext {
   confirmed: boolean;
   higherAppearances: number;
   substituteAppearances: number;
-  landesligaTotal: number;
   sameRoundHigher: boolean;
   sameWeekendHigher: boolean;
   parallelTeamUsed: boolean;
